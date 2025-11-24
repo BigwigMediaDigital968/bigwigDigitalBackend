@@ -154,3 +154,29 @@ exports.getLeadsLast10Days = async (req, res) => {
     res.status(500).json({ message: "Server error fetching lead data." });
   }
 };
+
+// PUT /leads/:id/mark
+exports.markLead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { marked } = req.body; // true or false
+
+    const updatedLead = await Lead.findByIdAndUpdate(
+      id,
+      { marked },
+      { new: true }
+    );
+
+    if (!updatedLead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    res.json({
+      message: "Lead marked status updated successfully",
+      lead: updatedLead,
+    });
+  } catch (error) {
+    console.error("Error updating mark status:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
