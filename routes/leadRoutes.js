@@ -5,13 +5,13 @@ const {
   verifyOTP,
   getAllLeads,
   getLeadsLast10Days,
-  markLead,
+  // markLead,
 } = require("../controllers/leadController");
 
 router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
 router.get("/all", getAllLeads);
 router.get("/last10days", getLeadsLast10Days);
-router.put("/:id/mark", markLead);
+// router.put("/:id/mark", markLead);
 
 module.exports = router;
