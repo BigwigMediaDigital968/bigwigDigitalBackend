@@ -35,7 +35,7 @@ exports.submitApplication = async (req, res) => {
 
     // Send email with attachment
     await sendEmail({
-      to: "accounts@bigwigmedia.in", // 🔁 Replace with actual HR email
+      to: "hsinghkhalsa980@gmail.com", // 🔁 Replace with actual HR email
       subject: "New Job Application - " + fullName,
       text: `New application received from ${fullName}.`,
       html,
