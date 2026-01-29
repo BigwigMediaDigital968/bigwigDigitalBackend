@@ -7,6 +7,6 @@ const {
 } = require("../controllers/analyticsController");
 
 router.get("/analytics-data", getAnalyticsData);
-router.get("/Summary-data", SummaryData);
+router.get("/summary-data", SummaryData);
 
 module.exports = router;
