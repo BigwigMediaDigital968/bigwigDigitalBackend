@@ -22,7 +22,7 @@ router.delete("/:slug", deleteBlogPostBySlug);
 router.patch(
   "/:slug/image",
   upload.single("coverImage"),
-  updateBlogImageBySlug
+  updateBlogImageBySlug,
 );
 
 module.exports = router;
