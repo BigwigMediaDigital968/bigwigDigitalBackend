@@ -19,6 +19,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+// app.options("*", cors());
 
 app.use(express.json());
 
@@ -34,7 +35,7 @@ const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, async () => {
   try {
-    connect();
+    await connect();
     console.log("✅ DB connected");
   } catch (error) {
     console.error("❌ DB connection failed:", error);
