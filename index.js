@@ -12,13 +12,26 @@ const { connect } = require("./config/db");
 const app = express();
 
 /* ===== OPEN CORS ===== */
+// app.use(
+//   cors({
+//     origin: "*",
+//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   }),
+// );
 app.use(
   cors({
-    origin: "*",
+    origin: [
+      "https://www.bigwigmediadigital.com",
+      "https://bigwigmediadigital.com",
+    ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   }),
 );
+
+/* Handle preflight requests */
 // app.options("*", cors());
 
 app.use(express.json());
