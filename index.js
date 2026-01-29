@@ -7,27 +7,35 @@ const jobRoutes = require("./routes/jobRoutes");
 const analyticsRoute = require("./routes/analyticsRoute");
 
 require("dotenv").config();
-
 const { connect } = require("./config/db");
 
 const app = express();
 
-// Middleware
-app.use(cors());
+/* ===== OPEN CORS ===== */
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
 app.use(express.json());
 
+/* ===== ROUTES ===== */
 app.use("/", blogRoutes);
 app.use("/api/lead", leadRoutes);
 app.use("/api", jobApplicationRoutes);
 app.use("/api", jobRoutes);
 app.use("/api/google", analyticsRoute);
 
-// Connect DB and start server
+/* ===== SERVER ===== */
 const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, async () => {
   try {
-    await connect();
+    connect();
+    console.log("✅ DB connected");
   } catch (error) {
     console.error("❌ DB connection failed:", error);
   }
