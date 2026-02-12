@@ -121,6 +121,12 @@ const blogPostSchema = new mongoose.Schema({
     default: 0,
   },
 
+  status: {
+    type: String,
+    enum: ["DRAFT", "PUBLISHED", "INACTIVE"],
+    default: "DRAFT",
+  },
+
   datePublished: {
     type: Date,
     default: Date.now,
