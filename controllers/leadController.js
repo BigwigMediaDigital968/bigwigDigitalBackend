@@ -128,7 +128,7 @@ exports.getLeadsLast10Days = async (req, res) => {
     const last10Days = Array.from({ length: 10 }, (_, i) =>
       moment()
         .subtract(9 - i, "days")
-        .format("YYYY-MM-DD")
+        .format("YYYY-MM-DD"),
     );
 
     const result = last10Days.map((date) => {
@@ -140,5 +140,68 @@ exports.getLeadsLast10Days = async (req, res) => {
   } catch (error) {
     console.error("Error fetching 10-day leads:", error);
     res.status(500).json({ message: "Server error fetching lead data." });
+  }
+};
+
+// Delete single lead
+// Delete Lead
+exports.deleteLead = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const lead = await Lead.findById(id);
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        message: "Lead not found",
+      });
+    }
+
+    await Lead.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Lead Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while deleting lead",
+    });
+  }
+};
+
+// Bulk lead Delete
+// Bulk Delete Leads
+exports.bulkDeleteLeads = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || !ids.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Lead IDs are required",
+      });
+    }
+
+    const result = await Lead.deleteMany({
+      _id: { $in: ids },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${result.deletedCount} lead(s) deleted successfully`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Bulk Delete Leads Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while deleting leads",
+    });
   }
 };
