@@ -4,6 +4,68 @@ const moment = require("moment");
 
 const otpMap = new Map(); // In-memory OTP store
 
+function sanitize(input) {
+  if (typeof input !== "string") return "";
+
+  return input
+    .trim()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
+exports.createLead = async (req, res) => {
+  const { name, email, phone, message, services } = req.body;
+
+  try {
+    // Store data + services
+    const data = { name, email, phone, message, services };
+    const newLead = Lead.create({
+      name: sanitize(name),
+      email: sanitize(email),
+      phone: sanitize(phone),
+      services: services,
+      message: sanitize(message),
+    });
+
+    //console.log("newLead", newLead);
+
+    // Confirmation email to user
+    await sendEmail({
+      to: email,
+      subject: "We've received your query - Bigwig Media Digital",
+      html: `
+      <div style="font-family: Arial; max-width: 600px; margin: auto;">
+        <h2>Hello ${data.name},</h2>
+        <p>Thank you for contacting <strong>Bigwig Media Digital</strong>.</p>
+        <p>We will connect with you within 24–48 hours.</p>
+      </div>
+    `,
+    });
+
+    // HR internal notification
+    await sendEmail({
+      to: "hsinghkhalsa980@gmail.com",
+      subject: "New Lead Captured - Bigwig Media",
+      html: `
+      <h3>New Lead Details</h3>
+      <p><strong>Name:</strong> ${data.name}</p>
+      <p><strong>Email:</strong> ${data.email}</p>
+      <p><strong>Phone:</strong> ${data.phone}</p>
+      <p><strong>Selected Services:</strong> ${data.services.join(", ")}</p>
+      <p><strong>Message:</strong><br /> ${data.message}</p>
+    `,
+    });
+
+    res.status(200).json({ message: "Lead captured, confirmation sent" });
+  } catch (err) {
+    console.error("Error :", err);
+    res.status(500).json({ message: "Server error while submitting form." });
+  }
+};
+
 // Send OTP
 exports.sendOTP = async (req, res) => {
   const { name, email, phone, message, services } = req.body;
@@ -174,7 +236,6 @@ exports.deleteLead = async (req, res) => {
   }
 };
 
-// Bulk lead Delete
 // Bulk Delete Leads
 exports.bulkDeleteLeads = async (req, res) => {
   try {
