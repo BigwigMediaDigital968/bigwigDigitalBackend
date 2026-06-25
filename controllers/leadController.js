@@ -47,7 +47,7 @@ exports.createLead = async (req, res) => {
 
     // HR internal notification
     await sendEmail({
-      to: "hsinghkhalsa980@gmail.com",
+      to: "hr@bigwigmediadigital.com",
       subject: "New Lead Captured - Bigwig Media",
       html: `
       <h3>New Lead Details</h3>
