@@ -16,21 +16,52 @@ function sanitize(input) {
     .replace(/'/g, "&#x27;");
 }
 
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Finds a lead with the same email (case-insensitive) or the same phone digits.
+// Phones are matched on digits only, since forms save "+91 98..." and "+9198...".
+const findExistingLead = (email, phone) => {
+  const conditions = [];
+
+  const cleanEmail = String(email || "").trim();
+  if (cleanEmail) {
+    conditions.push({
+      email: { $regex: `^${escapeRegex(cleanEmail)}$`, $options: "i" },
+    });
+  }
+
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits) {
+    conditions.push({
+      phone: { $regex: `^\\D*${digits.split("").join("\\D*")}\\D*$` },
+    });
+  }
+
+  if (!conditions.length) return null;
+  return Lead.findOne({ $or: conditions });
+};
+
 exports.createLead = async (req, res) => {
   const { name, email, phone, message, services } = req.body;
 
   try {
+    const existingLead = await findExistingLead(email, phone);
+    if (existingLead) {
+      return res.status(409).json({
+        message:
+          "We already have your details. Our team will reach back to you shortly.",
+      });
+    }
+
     // Store data + services
     const data = { name, email, phone, message, services };
-    const newLead = Lead.create({
+    await Lead.create({
       name: sanitize(name),
       email: sanitize(email),
       phone: sanitize(phone),
       services: services,
       message: sanitize(message),
     });
-
-    //console.log("newLead", newLead);
 
     // Confirmation email to user
     await sendEmail({
