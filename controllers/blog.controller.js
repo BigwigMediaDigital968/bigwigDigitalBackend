@@ -147,8 +147,12 @@ exports.updateBlogPostBySlug = async (req, res) => {
     if (excerpt) updateFields.excerpt = excerpt;
     if (category) updateFields.category = category;
 
-    if (tags) {
-      updateFields.tags = tags.split(",").map((t) => t.trim());
+    // Allow clearing tags by sending an empty string.
+    if (typeof tags === "string") {
+      updateFields.tags = tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
     }
 
     if (status) {

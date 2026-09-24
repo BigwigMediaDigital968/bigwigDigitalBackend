@@ -7,6 +7,8 @@ const editorImageSchema = new mongoose.Schema(
     originalName: String,
     size: Number,
     mimeType: String,
+    width: Number,
+    height: Number,
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

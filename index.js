@@ -16,7 +16,8 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+// Blog HTML is sent as JSON from the raw HTML editor; long posts exceed the 100kb default.
+app.use(express.json({ limit: "10mb" }));
 
 app.use("/", blogRoutes);
 app.use("/api/lead", leadRoutes);
