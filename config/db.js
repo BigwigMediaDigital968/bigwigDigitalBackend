@@ -7,6 +7,7 @@ const connect = () => {
 
   mongoose
     .connect(`${MongoURL}/${DB}`, {})
+    // mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("🚀 DataBase Connected"))
     .catch((reason) => {
       console.log(`💩 Unable to connect to DataBase \n${reason}`);

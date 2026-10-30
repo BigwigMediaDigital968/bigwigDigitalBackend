@@ -18,8 +18,6 @@ function sanitize(input) {
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Finds a lead with the same email (case-insensitive) or the same phone digits.
-// Phones are matched on digits only, since forms save "+91 98..." and "+9198...".
 const findExistingLead = (email, phone) => {
   const conditions = [];
 
@@ -53,7 +51,6 @@ exports.createLead = async (req, res) => {
       });
     }
 
-    // Store data + services
     const data = { name, email, phone, message, services };
     await Lead.create({
       name: sanitize(name),
@@ -63,7 +60,6 @@ exports.createLead = async (req, res) => {
       message: sanitize(message),
     });
 
-    // Confirmation email to user
     await sendEmail({
       to: email,
       subject: "We've received your query - Bigwig Media Digital",
@@ -76,7 +72,6 @@ exports.createLead = async (req, res) => {
     `,
     });
 
-    // HR internal notification
     await sendEmail({
       to: "hr@bigwigmediadigital.com",
       subject: "New Lead Captured - Bigwig Media",
@@ -85,7 +80,7 @@ exports.createLead = async (req, res) => {
       <p><strong>Name:</strong> ${data.name}</p>
       <p><strong>Email:</strong> ${data.email}</p>
       <p><strong>Phone:</strong> ${data.phone}</p>
-      <p><strong>Selected Services:</strong> ${data.services.join(", ")}</p>
+      <p><strong>Selected Services:</strong> ${data.services ? data.services.join(", ") : ""}</p>
       <p><strong>Message:</strong><br /> ${data.message}</p>
     `,
     });
@@ -97,12 +92,10 @@ exports.createLead = async (req, res) => {
   }
 };
 
-// Send OTP
 exports.sendOTP = async (req, res) => {
   const { name, email, phone, message, services } = req.body;
 
   try {
-    // Check if email already exists
     const existingLead = await Lead.findOne({ email });
     if (existingLead) {
       return res.status(400).json({
@@ -110,17 +103,14 @@ exports.sendOTP = async (req, res) => {
       });
     }
 
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
 
-    // Store data + services
     otpMap.set(email, {
       otp,
       data: { name, email, phone, message, services },
       time: Date.now(),
     });
 
-    // Send OTP email
     await sendEmail({
       to: email,
       subject: "Your OTP - Bigwig Media",
@@ -134,7 +124,6 @@ exports.sendOTP = async (req, res) => {
   }
 };
 
-// Verify OTP and save lead
 exports.verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -147,13 +136,11 @@ exports.verifyOTP = async (req, res) => {
   if (parseInt(otp) !== storedOtp)
     return res.status(400).json({ message: "Invalid OTP." });
 
-  // Save lead with services
   const newLead = new Lead({ ...data, verified: true });
   await newLead.save();
 
   otpMap.delete(email);
 
-  // Confirmation email to user
   await sendEmail({
     to: email,
     subject: "We've received your query - Bigwig Media Digital",
@@ -166,7 +153,6 @@ exports.verifyOTP = async (req, res) => {
     `,
   });
 
-  // HR internal notification
   await sendEmail({
     to: "hsinghkhalsa980@gmail.com",
     subject: "New Lead Captured - Bigwig Media",
@@ -175,7 +161,7 @@ exports.verifyOTP = async (req, res) => {
       <p><strong>Name:</strong> ${data.name}</p>
       <p><strong>Email:</strong> ${data.email}</p>
       <p><strong>Phone:</strong> ${data.phone}</p>
-      <p><strong>Selected Services:</strong> ${data.services.join(", ")}</p>
+      <p><strong>Selected Services:</strong> ${data.services ? data.services.join(", ") : ""}</p>
       <p><strong>Message:</strong><br /> ${data.message}</p>
     `,
   });
@@ -185,10 +171,9 @@ exports.verifyOTP = async (req, res) => {
   });
 };
 
-// Get all leads
 exports.getAllLeads = async (req, res) => {
   try {
-    const leads = await Lead.find().sort({ createdAt: -1 }); // Sort latest first
+    const leads = await Lead.find().sort({ createdAt: -1 });
     res.status(200).json(leads);
   } catch (err) {
     console.error("Error fetching leads:", err);
@@ -217,11 +202,10 @@ exports.getLeadsLast10Days = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // 🧩 Fill missing dates with count 0
     const last10Days = Array.from({ length: 10 }, (_, i) =>
       moment()
         .subtract(9 - i, "days")
-        .format("YYYY-MM-DD"),
+        .format("YYYY-MM-DD")
     );
 
     const result = last10Days.map((date) => {
@@ -236,8 +220,96 @@ exports.getLeadsLast10Days = async (req, res) => {
   }
 };
 
-// Delete single lead
-// Delete Lead
+// Edit full Lead fields (including status)
+exports.updateLead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, services, message, status, verified } = req.body;
+
+    const validStatuses = ["NEW", "CONTACTED", "FOLLOWUP", "COMPLETED", "REJECTED"];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status value. Allowed values: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    const updatedData = {};
+    if (name !== undefined) updatedData.name = sanitize(name);
+    if (email !== undefined) updatedData.email = sanitize(email);
+    if (phone !== undefined) updatedData.phone = sanitize(phone);
+    if (services !== undefined) updatedData.services = services;
+    if (message !== undefined) updatedData.message = sanitize(message);
+    if (status !== undefined) updatedData.status = status;
+    if (verified !== undefined) updatedData.verified = verified;
+
+    const lead = await Lead.findByIdAndUpdate(id, updatedData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        message: "Lead not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead updated successfully",
+      data: lead,
+    });
+  } catch (error) {
+    console.error("Update Lead Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating lead",
+    });
+  }
+};
+
+// Update only Lead status
+exports.updateLeadStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["NEW", "CONTACTED", "FOLLOWUP", "COMPLETED", "REJECTED"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed values: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    const lead = await Lead.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    );
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        message: "Lead not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead status updated successfully",
+      data: lead,
+    });
+  } catch (error) {
+    console.error("Update Lead Status Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating lead status",
+    });
+  }
+};
+
 exports.deleteLead = async (req, res) => {
   try {
     const { id } = req.params;
@@ -267,7 +339,6 @@ exports.deleteLead = async (req, res) => {
   }
 };
 
-// Bulk Delete Leads
 exports.bulkDeleteLeads = async (req, res) => {
   try {
     const { ids } = req.body;
